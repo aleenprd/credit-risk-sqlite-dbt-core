@@ -1,0 +1,30 @@
+version: 2
+
+# Sources make it possible to name and describe the data loaded into your warehouse by your Extract and Load tools.
+# By declaring these tables as sources in dbt, you can then:
+# select from source tables in your models using the {{ source() }} function
+# test your assumptions about your source data
+# calculate the freshness of your source data
+
+# Sources are about giving aliases to actual tables in the DWH.
+# This adds an extra abstraction on top of the raw tables.
+
+sources:
+  - name: adc-dev
+    description: Customer data for credit risk modelling task.
+    schema: main
+    tables:
+      - name: homeownership
+        identifier: api_homeownership
+      - name: newcustomer
+        identifier: api_newcustomer
+      - name: oldcustomer
+        identifier: api_oldcustomer
+      - name: purpose
+        identifier: api_purpose
+      - name: state
+        identifier: api_state
+      - name: subgrade
+        identifier: api_subgrade
+      - name: verifications
+        identifier: api_verifications

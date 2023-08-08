@@ -1,0 +1,12 @@
+adc:
+  outputs:
+    dev:
+      type: sqlite
+      threads: 1
+      database: customer_data_1
+      schema: 'main'
+      schemas_and_paths:
+        main: '../data/customer_data_1.db'
+        # src: '../data/src.db'
+      schema_directory: '../data'
+  target: dev
