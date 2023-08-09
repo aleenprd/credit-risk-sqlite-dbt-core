@@ -26,4 +26,4 @@ bigquery:
         dataset: dev
         threads: 1
         keyfile: "{{ env_var('DBT_SERVICE_ACCOUNT_KEYFILE') }}"
-  target: raw
+  target: dev
