@@ -50,7 +50,7 @@ is_not_verified,
 is_source_verified,
 {# oldcustomer called issue_d seems to contain only timestamps at 00:00:00, bring them to common format 
 YYYY-mm-dd and check if string of date corresponds to this regex or see if yhere are datetime functions idk #}
-issue_d,
+issue_d, {# select substr(issue_d, 1, instr(issue_d, ' ')) as issue_d from main.api_oldcustomer limit 5 THERE IS NO DATE TYPE IN SQLITE #}
 {# here we need to fetch the corresponding id from the src_purpose table#}
 purpose,
 {# here we need to fetch the corresponding id from the src_state table#}
@@ -71,3 +71,66 @@ age,
 pay_status
 FROM
     src_oldcustomer
+
+
+select 
+	first_number,
+	last_number,
+	round((first_number + last_number) / 2) as annual_inc from (
+	select
+		cast(replace(substr(annual_inc, 1, pos - 1), ',', '') as real) +1 as first_number,
+		cast(substr(annual_inc, pos + 1) as real) as last_number
+	from (
+		select 
+			substr(annual_inc, 2, length(annual_inc) - 2) as annual_inc,
+			instr(annual_inc,',') AS pos from main.api_oldcustomer
+		)
+	)
+limit 5;
+
+
+{# SQLITE doesn't come with regexp by default so we can 
+we can install the fucking perl module with
+sudo apt-get install sqlite3-pcre
+we can use this select statement to load the fucking module
+SELECT load_extension('/usr/lib/sqlite3/pcre.so');
+alternatively, fuck this shit and let's use a real database or DWH like PostGres or Snowflake or BQ or anything really
+I could impress by having this sqlite database running with docker compose and we connect to it I guess
+#}
+
+# Case YYYY-mm-dd
+select date(replace(issued, "00:00:00", "")) as issue_d 
+from `credit-risk-395413.raw.api_newcustomer`
+where regexp_contains(issued, r"\b\d{4}-\d{2}-\d{2}\b")
+and length(issued) = 10
+limit 5;
+
+select issued from `credit-risk-395413.raw.api_newcustomer` limit 20;
+# 05-Jan-11
+# 2016-01
+
+# Case YYYY-mm
+select date(concat(replace(issued, "00:00:00", ""), "-01")) as issue_d 
+from `credit-risk-395413.raw.api_newcustomer`
+where regexp_contains(issued, r"\b\d{4}-\d{2}\b") 
+and length(issued) = 7
+limit 5;
+
+# Case mm-Mon-YYYY (dates are from 2007 onwards so no need to worry about pre-21st century)
+select FORMAT_DATE("%mm-%dd-/%yyyy",PARSE_DATE('%d-%b-%y', issued))
+  (concat(
+  substr(issued, 1, 7),
+  "20",
+  substr(issued, 1, 2)
+  )) as issue_d 
+from `credit-risk-395413.raw.api_newcustomer`
+where regexp_contains(issued, r"\b\d{2}-[A-Za-z]{3}-\d{2}\b") 
+and length(issued) = 9
+limit 20;
+
+select issued, FORMAT_DATE("%Y-%m-%d",PARSE_DATE('%d-%b-%y', issued)) 
+from `credit-risk-395413.raw.api_newcustomer`
+where regexp_contains(issued, r"\b\d{2}-[A-Za-z]{3}-\d{2}\b") 
+and length(issued) = 9
+limit 10;
+
