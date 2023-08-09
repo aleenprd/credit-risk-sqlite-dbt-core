@@ -2,7 +2,7 @@ WITH raw_purpose AS (
     SELECT
         *
     FROM
-        {{ source('adc-dev', 'purpose') }}
+        {{ source('raw', 'purpose') }}
 )
 SELECT
     *

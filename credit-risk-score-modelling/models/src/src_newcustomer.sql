@@ -2,7 +2,7 @@ WITH raw_newcustomer AS (
     SELECT
         *
     FROM
-        {{ source('adc-dev', 'newcustomer') }}
+        {{ source('raw', 'newcustomer') }}
 )
 SELECT
     *

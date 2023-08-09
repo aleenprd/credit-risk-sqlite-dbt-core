@@ -1,4 +1,4 @@
-adc:
+sqlite:
   outputs:
     dev:
       type: sqlite
@@ -6,7 +6,24 @@ adc:
       database: customer_data_1
       schema: 'main'
       schemas_and_paths:
-        main: '../data/customer_data_1.db'
-        # src: '../data/src.db'
-      schema_directory: '../data'
+        main: "{{ env_var('SQLITE_DATABASE_FILE_PATH') }}"  # '../data/customer_data_1.db'
+      schema_directory: "{{ env_var('SQLITE_DATABASE_DIRECTORY_PATH') }}"  # '../data'
   target: dev
+
+bigquery:
+  outputs:
+    raw:
+      type: bigquery
+      method: service-account
+      project: "{{ env_var('GCP_PROJECT_ID') }}"
+      dataset: raw
+      threads: 1
+      keyfile: "{{ env_var('DBT_SERVICE_ACCOUNT_KEYFILE') }}"
+    dev:
+        type: bigquery
+        method: service-account
+        project: "{{ env_var('GCP_PROJECT_ID') }}"
+        dataset: dev
+        threads: 1
+        keyfile: "{{ env_var('DBT_SERVICE_ACCOUNT_KEYFILE') }}"
+  target: raw

@@ -2,7 +2,7 @@ WITH raw_subgrade AS (
     SELECT
         *
     FROM
-        {{ source('adc-dev', 'subgrade') }}
+        {{ source('raw', 'subgrade') }}
 )
 SELECT
     *

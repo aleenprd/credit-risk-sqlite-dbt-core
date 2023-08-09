@@ -2,7 +2,7 @@ WITH src_homeownership AS (
     SELECT
         *
     FROM
-        {{ source('adc-dev', 'homeownership') }}
+        {{ source('raw', 'homeownership') }}
 )
 SELECT
     *

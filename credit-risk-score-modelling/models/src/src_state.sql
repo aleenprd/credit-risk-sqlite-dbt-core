@@ -2,7 +2,7 @@ WITH raw_state AS (
     SELECT
         *
     FROM
-        {{ source('adc-dev', 'state') }}
+        {{ source('raw', 'state') }}
 )
 SELECT
     *

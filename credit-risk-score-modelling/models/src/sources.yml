@@ -10,9 +10,9 @@ version: 2
 # This adds an extra abstraction on top of the raw tables.
 
 sources:
-  - name: adc-dev
+  - name: raw
     description: Customer data for credit risk modelling task.
-    schema: main
+    schema: raw
     tables:
       - name: homeownership
         identifier: api_homeownership
