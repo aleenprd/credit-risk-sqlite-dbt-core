@@ -10,11 +10,12 @@ SELECT
     {# There is no boolean type in SQLite. The closest thing would probably
     ust be USING an INTEGER column
     AND storing 0 for FALSE
-    AND 1 for TRUE.https:// stackoverflow.com / questions / 46210704 / CAST - BOOLEAN - TO - INT - IN - sqlite #}
+    AND 1 for TRUE.https:// stackoverflow.com / questions / 46210704 / CAST - BOOLEAN - TO - INT - IN - sqlite 
+    select cast(loan_status as bool) as loan_status from raw.api_newcustomer; #}
     loan_status,
     loan_amnt,
     term,
-    int_rate,
+    int_rate, # select cast(int_rate as FLOAT64) from raw.api_oldcustomer;
     {# here we need to fetch the corresponding id from the src_subgrade table#}
     installment,
     sub_grade,
@@ -46,7 +47,7 @@ CASE
     ) THEN 1
     ELSE 0
 END AS is_verified,
-is_not_verified,
+is_not_verified, {# very fucking redundant #}
 is_source_verified,
 {# oldcustomer called issue_d seems to contain only timestamps at 00:00:00, bring them to common format 
 YYYY-mm-dd and check if string of date corresponds to this regex or see if yhere are datetime functions idk #}
@@ -134,3 +135,81 @@ where regexp_contains(issued, r"\b\d{2}-[A-Za-z]{3}-\d{2}\b")
 and length(issued) = 9
 limit 10;
 
+### AICI ASTA E FINALUL
+select 
+  case 
+    when regexp_contains(issued, r"\b\d{2}-[A-Za-z]{3}-\d{2}\b") and length(issued) = 9
+      then date(FORMAT_DATE("%Y-%m-%d",PARSE_DATE('%d-%b-%y', issued)))
+    when regexp_contains(issued, r"\b\d{4}-\d{2}\b") and length(issued) = 7
+      then date(concat(replace(issued, "00:00:00", ""), "-01"))
+    when regexp_contains(issued, r"\b\d{4}-\d{2}-\d{2}\b") and length(issued) = 10
+      then date(replace(issued, "00:00:00", ""))
+    else null
+  end as issued
+from `credit-risk-395413.raw.api_newcustomer`
+limit 10
+
+
+select 
+verification_status,
+CASE
+    WHEN upper(verification_status) IN (
+        'VERIFIED',
+        'SOURCE VERIFIED'
+    ) THEN 1
+    WHEN upper(verification_status) in ("NOT VERIFIED")
+      then 0
+    else null
+END AS is_verified
+from `credit-risk-395413.raw.api_oldcustomer`
+limit 50;
+
+select
+verification_status,
+CASE 
+  WHEN upper(verification_status) IN (
+        'VERIFIED',
+        'SOURCE VERIFIED'
+    ) THEN 0
+    WHEN upper(verification_status) in ("NOT VERIFIED")
+      then 1
+    else null
+END AS is_not_verified
+from `credit-risk-395413.raw.api_oldcustomer`
+limit 50;
+
+
+select emp_length,
+CASE
+  WHEN emp_length IS NULL THEN 0
+  ELSE emp_length
+end as emp_length
+from `credit-risk-395413.raw.api_oldcustomer`
+limit 50;
+
+select r.id as addr_state
+from `credit-risk-395413.raw.api_oldcustomer` l
+left join raw.api_state r on l.addr_state = substr(r.name, 5) 
+limit 5;
+
+select r.id as sub_grade
+from `credit-risk-395413.raw.api_oldcustomer` l
+left join raw.api_subgrade r on l.sub_grade = r.name 
+limit 5;
+
+select r.id as home_ownership
+from `credit-risk-395413.raw.api_oldcustomer` l
+left join raw.api_homeownership r on l.home_ownership = r.name 
+limit 5;
+
+select
+case when home_ownership = 'MORTGAGE' THEN TRUE
+    ELSE FALSE
+END AS is_mortgage
+from `credit-risk-395413.raw.api_oldcustomer`
+limit 10;
+
+select r.id as purpose
+from `credit-risk-395413.raw.api_oldcustomer` l
+left join raw.api_purpose r on regexp_contains(lower(r.name), l.purpose)
+limit 20;
