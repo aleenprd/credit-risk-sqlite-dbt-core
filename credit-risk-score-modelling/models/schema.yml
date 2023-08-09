@@ -1,0 +1,338 @@
+version: 2
+
+models:
+  - name: fct_oldcustomer
+    description: Cleansed version of api_oldcustomer fact table used for Credit Risk Score Modelling.
+    tests:
+      - dbt_expectations.expect_table_row_count_to_equal_other_table:
+          compare_model: ref("src_oldcustomer")
+      # - dbt_utils.expression_is_true:
+      #     expression: "pay_status != 0"
+
+    columns:
+      - name: id
+        description: Primary key for loan fact.
+        tests:
+          - unique
+          - not_null
+          - relationships:
+              to: ref("src_oldcustomer")
+              field: id
+
+      - name: loan_status
+        description: Current status of the loan (charged off/default or fully paid/no default).
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: boolean
+
+      - name: loan_amnt
+        description: The listed amount of the loan applied for by the borrower, charged off or fully paid.
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: int64
+          # - dbt_expectations.expect_column_values_to_be_between:
+          #     min_value: 0
+          #     strictly: true
+
+      - name: term
+        description: The number of payments of the loan.
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: int64
+
+      - name: int_rate
+        description: Interest rate on the loan.
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0.0
+              max_value: 100.0
+              strictly: false
+
+      - name: installment
+        description: The monthly payment owned by the borrower.
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0.0
+              strictly: true
+
+      - name: sub_grade
+        description: Assigned loan subgrade.
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: int64
+
+      - name: emp_length
+        description: Employment length in years. Possible values 0 to 10 (0 is <1yr and 10 is >=10yrs).
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: int64
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 10
+              strictly: false
+
+      - name: home_ownership
+        description: The home ownership status provided by the borrower.
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: int64
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 1
+              max_value: 6
+              strictly: false
+
+      - name: is_mortgage
+        description: The client's home ownership is a mortgage.
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: boolean
+
+      - name: is_rent
+        description: The client's home ownership is a rental.
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: boolean
+
+      - name: is_own
+        description: The client's home is self owned.
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: boolean
+
+      - name: is_any
+        description: The client's home ownership is of ambiguous type.
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: boolean
+
+      - name: is_other
+        description: The client's home ownership is of another type.
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: boolean
+
+      - name: annual_inc
+        description: The self-reported annual income provided by the borrower.
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: int64
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              strictly: false
+
+      - name: verification_status
+        description: Indicates if income was verified or not verified or if the source was.
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: int64
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 1
+              max_value: 3
+              strictly: false
+
+      - name: is_verified
+        description: The client's income is verified.
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: boolean
+
+      - name: is_not_verified
+        description: The client's income is not verified.
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: boolean
+
+      - name: is_source_verified
+        description: The client's sources of income are verified.
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: boolean
+
+      - name: issue_d
+        description: The date in which the loan was funded to borrower.
+        tags: [date_tag]
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: date
+          # - dbt_expectations.expect_column_values_to_match_regex:
+          #     regex: "\b\\d{4}-\\d{2}-\\d{2}\b"
+          #     is_raw: True
+          #     config:
+          #       severity: warn
+
+      - name: purpose
+        description: A category provided by the borrower for the loan request.
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: int64
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 1
+              max_value: 14
+              strictly: false
+
+      - name: addr_state
+        description: The state provided by the borrower in the loan request.
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: int64
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 52
+              max_value: 102
+              strictly: false
+
+      - name: dti
+        description: A ratio between total monthly debt payments on total debt divided by monthly income.
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0.0
+              max_value: 100.0
+              strictly: false
+
+      - name: fico_range_low
+        description: The lower boundary of FICO score.
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: int64
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 300
+              max_value: 850
+              strictly: false
+
+      - name: fico_range_high
+        description: The high boundary of FICO score.
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: int64
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 300
+              max_value: 850
+              strictly: false
+
+      - name: open_acc
+        description: The number of open credit lines in borrower's credit file.
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: int64
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 1
+              max_value: 100
+              strictly: false
+              config:
+                severity: warn
+
+      - name: pub_rec
+        description: The number of derogatory public records.
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: int64
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 100
+              strictly: false
+              config:
+                severity: warn
+
+      - name: revol_bal
+        description: Total credit revolving balance.
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: int64
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              strictly: false
+
+      - name: revol_util
+        description: Revolving line utilization rate or amount of credit used relative to available revolving credit.
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0.0
+              max_value: 300.0
+              strictly: false
+              config:
+                severity: warn
+
+      - name: mort_acc
+        description: Number of mortgage accounts.
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: int64
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 50
+              strictly: false
+              config:
+                severity: warn
+
+      - name: pub_rec_bankruptcies
+        description: Number of public record bankruptcies.
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: int64
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 50
+              strictly: false
+              config:
+                severity: warn
+
+      - name: age
+        description: Age of borrower at time of application.
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: int64
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 18
+              max_value: 120
+              strictly: false
+              config:
+                severity: error
+
+      - name: pay_status
+        description: Last known repayment status (-2, -1 pay duly; 1 delay 1mo; ... ;9 delay 9mo and above.).
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: int64
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: -2
+              max_value: 9
+              strictly: false

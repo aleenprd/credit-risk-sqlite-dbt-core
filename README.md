@@ -4,10 +4,10 @@ echo $GCP_PROJECT_ID
 this will be used by dbts profiles.yml through Jinja templateing
 
 # Asignment Description
-![Assignment Description](./documentation/photos/assignment_description.png)
-![Assignment Description](./documentation/photos/final_schema_1.png)
-![Assignment Description](./documentation/photos/final_schema_2.png)
-![Assignment Description](./documentation/photos/database_snapshot.png)
+![Assignment Description](./docs/photos/assignment_description.png)
+![Assignment Description](./docs/photos/final_schema_1.png)
+![Assignment Description](./docs/photos/final_schema_2.png)
+![Assignment Description](./docs/photos/database_snapshot.png)
 
 ## Obs: Mention Dbeaver, Valentina Studio
 
@@ -23,7 +23,7 @@ SQLite does not allow views in one schema (i.e. database file) to reference obje
 As such, we will materialize tables, not views. But in practice, for src, in a DWH like BQ, Redshift and Snowflake, I would use the views materialization.
 
 ### Source tables
-I want to create some views of the raw tables as sources for my models (reason is so we can document them within DBT and able to use them in generating documentation DAG)
+I want to create some views of the raw tables as sources for my models (reason is so we can document them within DBT and able to use them in generating docs DAG)
 
 SELECT
     loan_status,
@@ -96,7 +96,103 @@ pay_status integer (-2 and -1 us oay duly; 1 is payment delay for 1mo, 2 is dela
 ### How to Run
 cd credit-risk-score-modelling
 dbt deps
-declare environment variables
+declare environment variables: source setup_env_variables.sh --gcp-project-id "credit-risk-395413" --dbt-service-account-keyfile "./service_account_key.json"
 export GCP_PROJECT_ID=<your_project_id>
 export DBT_SERVICE_ACCOUNT_KEYFILE=<your_service_account_keyfile_path>
 dbt debug (to check connection)
+
+# Questions
+- What is up with the negative loan amounts? Is that possible?
+- Observed several redundancies in this supposed ML dataset such as both is_verified and is_not_verified
+- Or having both the categorial variable homeownership and the 1-hot encoded values.
+- Is pay status supposed to also have values of zero?
+
+### Tests
+#### Oldcustomer
+- test same number of records as src
+
+#### Newcustomer
+- test same number of records as src
+
+### Data cleaning
+SELECT  
+round( (max(fico_range_low) + min(fico_range_low)) / 2),
+round( (max(fico_range_high) + min(fico_range_high)) / 2)
+FROM `src.api_oldcustomer` 
+
+
+
+
+
+
+
+{# just do the transformations here #}
+WITH src_oldcustomer AS (
+    SELECT
+        *
+    FROM
+        {{ ref('src_oldcustomer') }}
+)
+SELECT
+    id,
+    {# There is no boolean type in SQLite. The closest thing would probably
+    ust be USING an INTEGER column
+    AND storing 0 for FALSE
+    AND 1 for TRUE.https:// stackoverflow.com / questions / 46210704 / CAST - BOOLEAN - TO - INT - IN - sqlite 
+    select cast(loan_status as bool) as loan_status from raw.api_newcustomer; #}
+    loan_status,
+    loan_amnt,
+    term,
+    int_rate, # select cast(int_rate as FLOAT64) from raw.api_oldcustomer;
+    {# here we need to fetch the corresponding id from the src_subgrade table#}
+    installment,
+    sub_grade,
+    CASE
+        WHEN emp_length IS NULL THEN 0
+        ELSE emp_length
+    END AS emp_length,
+    home_ownership,
+    {# here we need to fetch the corresponding id from the src_homeownership table#}
+    if home_ownership == 'MORTGAGE' THEN TRUE
+    ELSE FALSE
+END AS is_mortgage,
+if is_rent == 'RENT' THEN TRUE
+ELSE FALSE
+END AS is_rent,
+0 AS is_own,
+0 AS is_any,
+0 AS is_other,
+{# aici la old customer tre sa spargem in doua numere, sa luam punctul de mijloc media
+si aia e,
+la nou lasam asa,
+CHECK NOT NULL #}
+0 AS annual_inc,
+verification_status {# here we need to fetch the corresponding id from the src_verification table#},
+CASE
+    WHEN verification_status IN (
+        'VERIFIED',
+        'SOURCE_VERIFIED'
+    ) THEN 1
+    ELSE 0
+END AS is_verified,
+is_not_verified, {# very fucking redundant #}
+is_source_verified,
+{# oldcustomer called issue_d seems to contain only timestamps at 00:00:00, bring them to common format 
+YYYY-mm-dd and check if string of date corresponds to this regex or see if yhere are datetime functions idk #}
+issue_d, {# select substr(issue_d, 1, instr(issue_d, ' ')) as issue_d from main.api_oldcustomer limit 5 THERE IS NO DATE TYPE IN SQLITE #}
+{# here we need to fetch the corresponding id from the src_purpose table#}
+purpose,
+{# here we need to fetch the corresponding id from the src_state table#}
+addr_state,
+dti,
+{# {{ seed('statistics.plm') }} 
+definetely use seeds and argument that we don't want this number to change dinamically. 
+make an argument for version control #} 
+case when fico_range_low is null then round(avg(max(fico_range_low), min(fico_range_low))) end as fico_range_low,
+case when fico_range_high is null then round(avg(max(fico_range_high), min(fico_range_high))) end as fico_range_high fico_range_high,
+case when open_acc is null then 0 end as open_acc,
+case when pub_rec is null then 0 end as pub_rec,
+case when revo_bal is null then 0 end as revo_bal,
+case when revol_util is null then 0.0 end as revol_util,
+case when mort_acc is null then 0 end as mort_acc,
+case when pub_rec_bankruptcies is null then 0 end as pub_rec_bankruptcies,

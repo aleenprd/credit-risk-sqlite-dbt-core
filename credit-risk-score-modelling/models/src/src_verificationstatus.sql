@@ -2,7 +2,7 @@ WITH raw_verifications AS (
     SELECT
         *
     FROM
-        {{ source('raw', 'verifications') }}
+        {{ source('raw', 'verificationstatus') }}
 )
 SELECT
     *

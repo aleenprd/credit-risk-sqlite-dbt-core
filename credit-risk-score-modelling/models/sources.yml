@@ -26,5 +26,5 @@ sources:
         identifier: api_state
       - name: subgrade
         identifier: api_subgrade
-      - name: verifications
-        identifier: api_verifications
+      - name: verificationstatus
+        identifier: api_verificationstatus

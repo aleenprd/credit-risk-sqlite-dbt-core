@@ -33,8 +33,12 @@ clean-targets:         # directories to be removed by `dbt clean`
 models:
   credit-risk-score-modelling:
     src:
-      +materialized: view
+      # Actually ephemeral is just common table expression CTE (reduces clutter from DWH)
+      +materialized: ephemeral  
     fct:
       +materialized: table
 
-  
+# Project variables
+# Required by DBT-Expectations
+vars:
+  'dbt_date:time_zone': 'America/Los_Angeles'

@@ -1,1 +1,0 @@
-actually have a CSV file with averages etc to use for replacing nulls.
