@@ -5,6 +5,7 @@ name = "pypi"
 
 [packages]
 dbt-sqlite = "*"
+dbt-bigquery = "*"
 
 [dev-packages]
 
