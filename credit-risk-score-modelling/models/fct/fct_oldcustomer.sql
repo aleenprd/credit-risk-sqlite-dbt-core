@@ -66,7 +66,7 @@ seed_fico AS (
         {{ ref('seed_fico') }}
 )
 SELECT
-    oc.id AS id,
+    cust.id AS id,
     CAST(
         loan_status AS bool
     ) AS loan_status,
@@ -109,10 +109,15 @@ SELECT
         ELSE FALSE
     END AS is_any,
     CASE
-        WHEN home_ownership = 'OTHER' THEN TRUE
+        WHEN home_ownership IN (
+            'OTHER',
+            'NONE'
+        ) THEN TRUE
         ELSE FALSE
     END AS is_other,
-    CAST(ROUND((ocai.first_number + ocai.last_number) / 2) AS INTEGER) AS annual_inc,
+    CAST(
+        ROUND((custai.first_number + custai.last_number) / 2) AS INTEGER
+    ) AS annual_inc,
     vs.id AS verification_status,
     CASE
         WHEN UPPER(verification_status) IN (
@@ -186,24 +191,24 @@ SELECT
     age,
     pay_status
 FROM
-    src_oldcustomer oc
+    src_oldcustomer cust
     LEFT JOIN src_subgrade s
-    ON oc.sub_grade = s.name
+    ON cust.sub_grade = s.name
     LEFT JOIN src_homeownership ho
-    ON oc.home_ownership = ho.name
+    ON cust.home_ownership = ho.name
     LEFT JOIN src_purpose p
     ON LOWER(
         p.name
     ) LIKE CONCAT(
-        oc.purpose,
+        cust.purpose,
         "%"
     )
     LEFT JOIN src_verificationstatus vs
-    ON oc.verification_status = vs.name
+    ON cust.verification_status = vs.name
     LEFT JOIN src_state st
-    ON oc.addr_state = SUBSTR(
+    ON cust.addr_state = SUBSTR(
         st.name,
         5
     )
-    LEFT JOIN src_oldcustomer_annual_inc ocai
-    ON oc.id = ocai.id
+    LEFT JOIN src_oldcustomer_annual_inc custai
+    ON cust.id = custai.id
