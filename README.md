@@ -3,14 +3,14 @@ Designed, implemented, tested, packaged and submitted by [**Alin Preda**](https:
 
 ##  Task Description
 I have included the task's instructions here as a screenshot (couldn't select and copy original text):
-<img src="./docs/photos/assignment_description.png" alt="Assignment Description P1" width="700"/>
+<img src="./docs/photos/assignment_description.png" alt="Assignment Description P1" width="500"/>
 
 Essentially, we are to take the following raw data with its customer loans facts and its other dimensions, as presented in this diagram and transform it into a final schema.
-<img src="./docs/photos/database_snapshot.png" alt="Raw Data ER Diagram" width="700"/>
+<img src="./docs/photos/database_snapshot.png" alt="Raw Data ER Diagram" width="500"/>
 
 The final schema should have strict data types, naming conventions, and should consider missing values, acceptable ranges, etc.
-<img src="./docs/photos/final_schema_1.png" alt="Final Data Snapshot P1" width="700"/>
-<img src="./docs/photos/final_schema_2.png" alt="Final Data Snapshot P2" width="700"/>
+<img src="./docs/photos/final_schema_1.png" alt="Final Data Snapshot P1" width="500"/>
+<img src="./docs/photos/final_schema_2.png" alt="Final Data Snapshot P2" width="500"/>
 
 
 ## Methodology
@@ -98,12 +98,13 @@ I want to create some views of the raw tables as sources for my models, using CT
 
 <b>Fact Models (views, table)</b>
 
-Due to the two conflicting customer fact tables, which require in some cases completely different types of cleaning and data manipulation, I have decided that the best way to complete the final table is to divide and conquer. I have modularized the code and the model, such that I have two views, <i>fct_oldcustomer</i> and <i>fct_newcustomer</i> in which I apply different transformations and for which I have pretty much the same set of tests implemented.
+Due to the two conflicting customer fact tables, which require in some cases completely different types of cleaning and data manipulation, I have decided that the best way to complete the final table is to divide and conquer. I have modularized the code and the model, such that I have two views, <i>fct_oldcustomer</i> and <i>fct_newcustomer</i> in which I apply different transformations and for which I have pretty much the same set of tests implemented. The final table is simply a UNION ALL between the two views.
 
 <b>Compiling and Materializing Models</b>
 
 DBT code will be compiled to SQL code native to the choice of data warehouse. Running ```dbt compile``` will do this and it will put the compiled code into <i>credit-risk-score-modelling/target/compiled</i>. But it will not materialize the models yet. To do that, you need to run ```dbt run```. This will compile SQL code including actual materialization, and you can check it (mostly for debugging) in <i>credit-risk-score-modelling/target/compiled</i>. You can run this code directly against your warehouse and it will just work. To run a specific model, compilation or test, use the ```dbt --select``` flag followed by the name (the filename) of your model.
 
+> Obs: if you want to run all models completely from scratch, run ```dbt run --full-refresh```. If you want to clean up your project, the command ```dbt clean``` will erase the <i>target</i> and <i>dbt_packages</i> folders by default. In my case, I also added the logs to be cleaned. This can be changed in <i>dbt_project.yml</i>.
 
 <b>Testing</b>
 
@@ -152,7 +153,7 @@ I have gathered the following observations on the datasets.
 My most concerning finding is with respect to the <i>addr_state_id</i> variable in <i>api_newcustomer</i>. I notice that for the <i>api_state table</i> and both the customer tables we have 51 distinct values for names of states and ids respectively. And yes, in <i>api_state</i>, the ids go from 51 to 102, and they correspond correctly with their names to values of <i>addr_state</i> in <i>api_oldcustomer</i>. But the problem is that the <i>addr_state_id</i> values range from 1 to 51. From this I have devised two very different hypotheses.
 - The 1-51 values represent completely different states, outside of the US (unlikely, since they are 51 in number which is the total number of US states plus Washington DC).
 - They represent the same states so I just need to work around the numbers and either keep a range of 1 to 51, or a range of 52 to 102.
-For the time being, I have chosen to add 50 to the <i>addr_state_id</i> variable in <i>fct_newcustomer</i>, such that I can keep consistency with the dimension table.
+For the time being, I have chosen to add 1 to the <i>addr_state_id</i> variable in <i>fct_newcustomer</i>, such that I can keep consistency with the dimension table.
 
 
 <b>Loan Amount Variable</b>
@@ -182,3 +183,4 @@ I have noticed several redundancies in this supposed ML training dataset:
 - Is pay status supposed to also have values of zero? Because in the PDF of the assignment I have received it says in the variable's description field that "-2 and -1 represent 'pay duly' and then from 1 onwards to 9 the values represent payment delay.' As such, I am assuming that zero also means 'pay duly' or paid just in time, whereas negative values mean that the loan was paid before the term. Is that correct? Currently, I disabled the DBT tests which check for the expression 'pay_status != 0' until I come to the bottom of this.
 - For the home ownership variable I also noticed we have a <i>name</i> of 'NONE' in the dimension table. I thought of assigning Nones to <i>is_other</i> as it made the most sense to me at the moment. But then it's also not clear what the distinction between **ANY** and **OTHER** is, so please explain this further.
 - Lastly, I believe the ID should still be included in this dataset, and should be discarded downstream by the ML pipeline if needed. But it is still very useful for analysis and debugging purposes, and of course, very much so for inference, because we are very interested in who is the customer who might default on their credit.
+- I also noticed due to the DBT tests, that the final table's IDs are not actually unique which means that we have captured information on the same customers in the two tables. Either this, or we need new **truly unique** IDs.

@@ -17,13 +17,13 @@ bigquery:
       method: service-account
       project: "{{ env_var('GCP_PROJECT_ID') }}"
       dataset: raw
-      threads: 1
+      threads: 4
       keyfile: "{{ env_var('DBT_SERVICE_ACCOUNT_KEYFILE') }}"
     dev:
         type: bigquery
         method: service-account
         project: "{{ env_var('GCP_PROJECT_ID') }}"
         dataset: dev
-        threads: 1
+        threads: 4
         keyfile: "{{ env_var('DBT_SERVICE_ACCOUNT_KEYFILE') }}"
   target: dev

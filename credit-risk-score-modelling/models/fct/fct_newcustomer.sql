@@ -121,7 +121,6 @@ SELECT
         WHEN verification_status_id != 1 THEN FALSE
         ELSE NULL
     END AS is_source_verified,
-    issued,
     CASE
         WHEN regexp_contains(
             issued,
@@ -148,7 +147,7 @@ SELECT
         ELSE NULL
     END AS issue_d,
     purpose_id AS purpose,
-    addr_state_id AS addr_state,
+    addr_state_id + 51 AS addr_state,
     CAST(
         dti AS float64
     ) AS dti,
