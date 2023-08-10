@@ -6,6 +6,7 @@ I have included the task's instructions here as a screenshot (couldn't select an
 <img src="./docs/photos/assignment_description.png" alt="Assignment Description P1" width="500"/>
 
 Essentially, we are to take the following raw data with its customer loans facts and its other dimensions, as presented in this diagram and transform it into a final schema.
+
 <img src="./docs/photos/database_snapshot.png" alt="Raw Data ER Diagram" width="500"/>
 
 The final schema should have strict data types, naming conventions, and should consider missing values, acceptable ranges, etc.
@@ -112,7 +113,14 @@ The fact models are being thoroughly tested on a general level and on column lev
 
 In order to perform the entire suite of tests on the models and check everything is okay, simply run ```dbt test``` from the command line. **Fingers crossed!**
 
-<img src="https://t4.ftcdn.net/jpg/02/63/38/65/360_F_263386566_OKVh2HLyRmyBIqUvTwGpQDBOe07dSFPh.jpg" alt="Raw Data ER Diagram" width="250"/>
+<img src="https://t4.ftcdn.net/jpg/02/63/38/65/360_F_263386566_OKVh2HLyRmyBIqUvTwGpQDBOe07dSFPh.jpg" alt="Fingers Crossed" width="250"/>
+
+## Documentation WebServer
+DBT allows us to generate dynamic documentation on our models. Run the command ```dbt docs generate``` and it will create a 'catalog' which is a JSON file. Running ```dbt docs serve``` will serve us a DBT Documentation web application on http://localhost:8080. To shutdown the server, press Ctrl+C in your command line.
+
+I **highly recommend** to make use of this feature of DBT and explore its full capabilities. The documentation application is extremely detailed and it gives you full information on your models and your data including statistics, data size, descriptions of datasets and their columns, which tests we are running, data types, and even a fully interactive representation of a data lineage DAG (Directed Acyclic Graph) of your DBT models:
+
+<img src="./docs/photos/dag_data_lineage.png" alt="Data Lineage DAG" width="700"/>
 
 ## Comments on Data Quality
 I have gathered the following observations on the datasets.
