@@ -1,8 +1,8 @@
 # Credit Risk Score Modelling
-Assignment designed, implemented, tested, packaged and submitted by [**Alin Preda**](https://www.linkedin.com/in/alin-preda/), Copenhagen, Denmark, August 2023. 
+Designed, implemented, tested, packaged and submitted by [**Alin Preda**](https://www.linkedin.com/in/alin-preda/), Copenhagen, Denmark, August 2023. 
 
-##  Assignment Description
-I have included the assignment's instructions here as a screenshot (couldn't select and copy original text)
+##  Task Description
+I have included the task's instructions here as a screenshot (couldn't select and copy original text):
 <img src="./docs/photos/assignment_description.png" alt="Assignment Description P1" width="700"/>
 
 Essentially, we are to take the following raw data with its customer loans facts and its other dimensions, as presented in this diagram and transform it into a final schema.
@@ -19,7 +19,15 @@ The final schema should have strict data types, naming conventions, and should c
 
 <b>Why not Sqlite?</b>
 
-The data was provided as an Sqlite3 database file. Initially, I started coding with DBT over Sqlite but quickly found myself concerned with the fact that Sqlite3 does not support certain data types such as boolean. It recognizes TRUE and FALSE but internally it converts them to 1s and 0s. Secondly, while trying to clean the dates field, I found out it does not natively support REGEXP. What a bummer! I had to install a [Perl regular expressions package](https://stackoverflow.com/questions/5071601/how-do-i-use-regex-in-a-sqlite-query) which had to be loaded from the command line (or with a SELECT load_extension() statement) every time I wanted to use it. That was a bit too much for me to handle.
+The data was provided as an Sqlite3 database file. Initially, I started coding with DBT over Sqlite but quickly found myself concerned with the fact that Sqlite3 does not support certain data types such as boolean. It recognizes TRUE and FALSE but internally it converts them to 1s and 0s. 
+
+Secondly, while trying to clean the dates field, I found out it does not natively support REGEXP. What a bummer! I had to install a [Perl regular expressions package](https://stackoverflow.com/questions/5071601/how-do-i-use-regex-in-a-sqlite-query) which had to be loaded from the command line (or with a SELECT load_extension() statement) every time I wanted to use it. 
+
+Thirdly, Sqlite does not allow views in one schema (i.e. database file) to reference objects in another schema. You'll get this error from SQLite: "view [someview] cannot reference objects in database [somedatabase]". You must set materialized='table' in models that reference other schemas.
+
+Lastly, there is an [issue](https://github.com/codeforkjeff/dbt-sqlite/issues/47) with the Sqlite adapter for DBT, where I also commented. You can edit the code in your virtual environment, like I did, to apply a bugfix. If you don't do this, you can't use the adapter, hence, you cannot even compile, much less run your models.
+
+All of this was a bit too much for me to handle...
 
 <img src="https://i.stack.imgur.com/D8Dkb.png" alt="Final Data Snapshot P2" width="300"/>
 
@@ -58,6 +66,7 @@ I provide you with both the Sqlite3 database and the CSV files I have exported. 
 DBT is a Python package available through pip. It is standard practice to use a virtual environment for different projects. My choice is to use [Pipenv](https://pipenv.pypa.io/en/latest/), a tool that combines <i>virtualenv</i> with <i>pip</i>. Yours could be virtualenv or even Poetry. So I provided you with <i>Pipfile</i>, <i>Pipfile.lock</i> and also good old <i>requirements.txt</i>, to suit your own developer preference and be able to install the dependencies.
 
 <b>Dependency Management</b>
+
 - Make sure you are in the main directory (cd into it, if you've git cloned it) and set up your virtual environment. 
 - Then you can either ```pip install -r requirements.txt``` or if using Pipenv you can ```pipenv shell``` to start the interactive shell and then ```pipenv install```. This will install the DBT database connectors (for sqlite and bigquery). 
 - Following this step, you will want to also install some DBT packages (dbt_utils and dbt_expectations) which are defined in <i>packages.yml</i>. Do this by running ```dbt deps```.
@@ -79,92 +88,65 @@ Now, setting up environment variables manually is a pain, which is why I offer y
 
 Now, if everything is correct, you should be able to test your connection to the data warehouse and also the correctness of your DBT project's code by running ```dbt debug```. Check the output and I pray you see only green and no red colors.
 
-### Install DBT Packages
-pip install dbt-sqlite
-!There is an issue with the sqlite adapter for DBT, raised as https://github.com/codeforkjeff/dbt-sqlite/issues/47 where I also commented. You can edit the code in your virtual environment, like I did, to apply a bugfix. If you don't do this, you can't use the adapter, hence, you cannot even compile, much less run your models.
+## Modelling and ELT Pipeline
+DBT <i>models</i> are created as SQL select statements. They can be materialized in different ways in our warehouse, including views and tables. You will find these under <i>credit-risk-score-modelling/models/</i>.
 
-dbt deps
 
-According to https://docs.getdbt.com/docs/core/connect-data-platform/sqlite-setup:
-SQLite does not allow views in one schema (i.e. database file) to reference objects in another schema. You'll get this error from SQLite: "view [someview] cannot reference objects in database [somedatabase]". You must set materialized='table' in models that reference other schemas.
+<b>Source Models (views)</b>
 
-As such, we will materialize tables, not views. But in practice, for src, in a DWH like BQ, Redshift and Snowflake, I would use the views materialization.
+I want to create some views of the raw tables as sources for my models, using CTE (Common table expressions). The reason is such that we can document them within DBT, and able to use them in generating docs DAG. If we just built the rest of the models directly on the raw tables, then we wouldn't be able to trace data lineage back to them. You will find these under <i>credit-risk-score-modelling/models/src</i>.
 
-### Source tables
-I want to create some views of the raw tables as sources for my models (reason is so we can document them within DBT and able to use them in generating docs DAG)
+<b>Fact Models (views, table)</b>
 
-SELECT
-    loan_status,
-    loan_amnt,
-    term,
-    int_rate,
-    installment,
-    sub_grade,
-    emp_length,
-    home_ownership,
-    is_mortgage,
-    is_rent,
-    is_own,
-    is_any,
-    is_other,
-    annual_inc,
-    verification_status,
-    is_verified,
-    is_not_verified,
-    is_source_verified,
-    issue_d,
-    purpose,
-    addr_state,
-    dti,
-    fico_range_low,
-    fico_range_high,
-    open_acc,
-    pub_rec,
-    revo_bal,
-    revol_util,
-    mort_acc,
-    pub_rec_bankruptcies,
-    age,
-    pay_status
+Due to the two conflicting customer fact tables, which require in some cases completely different types of cleaning and data manipulation, I have decided that the best way to complete the final table is to divide and conquer. I have modularized the code and the model, such that I have two views, <i>fct_oldcustomer</i> and <i>fct_newcustomer</i> in which I apply different transformations and for which I have pretty much the same set of tests implemented.
 
-id integer (i would add it),
-loan_status boolean (both fact tables, is integer in sqlite, chck not null, non-zero), # A charge-off means a debt is deemed unlikely to be collected by the creditor,
-loan_amnt integer (in newcustomer is like 12.0k string, in oldcustomer is like integer 12,000), 
-term integer (newcustomer is 3.0Y string, oldcustomer is integer already, check not null, consider meaning of zero),
-int_rate double (here already some floating point number in both, check if not null or zero, thats odd),
-installment double (looks fine in both, check non zero, not null),
-sub_grade integer (you have sub_grade_id integer in newcustomer, and sub_grade in oldcustomer which is the code, we actually need the integer. Check that codes and numbers exist in the table, not null),
-emp_length (employment_length in new, good in old, replace nulls with zero, check not null, above zero),
-home_ownership integer (old customer has in string, new has in integer called home_ownership_id, check values in table),
-is_mortgage boolean (I just want to say that including this in the credit risk model alongside the following features is redundant),
-is_rent boolean (if mortgage == rent then true),
-is_own,
-is_any,
-is_other,
-annual_inc integer (aici la old customer tre sa spargem in doua numere, sa luam punctul de mijloc media si aia e, la nou lasam asa, check not null), 
-verification_status integer (in old e string, in new e numar, same deal ca pana acum, are 3 valori max),
-is_verified boolean (if source verified or verified => true else false),
-is_not_verified boolean (same shit),
-is_source_verified,
-issue_d date (newcustomer called issued contains YYYY-mm, YYYY-mm-dd, dd-MON-YY, timestamps, etc,; oldcustomer called issue_d seems to contain only timestamps at 00:00:00, bring them to common format YYYY-mm-dd and check if string of date corresponds to this regex or see if yhere are datetime functions idk),
-purpose inteer (new has purpose_id, old has name, check if integers are in ids, check if strings are in names in dim tables),
-addr_state integer (same shit as above),
-dti double (using dti in oldcustomer we can reverse engineer the annual income but nah, just check if between 0 and 100),
-fico_range_low (low in both tables is 660 and high is 664, very interesting, they in reality go from 300 to 850),
-fico_range_high (what can I replace the nulls with, I will replace it with the mean score),
-open_acc integer (replace nulls with 0, must be positive),
-pub_rec integer (replace nulls with 0, must be positive),
-revol_bal (nulls replace with zero, should be positive),
-revol_util (replace nulls with zero, should be between zero and 100),
-mort_acc integer (should be positive, nulls replace with zero),
-pub_rec_bankruptcies integer (should be positive, nulls replace with zero),
-age integer (should be 18 to 120, doesnt contain nulls but check not null),
-pay_status integer (-2 and -1 us oay duly; 1 is payment delay for 1mo, 2 is delay 2mo, up till 9)
+<b>Compiling and Materializing Models</b>
+
+DBT code will be compiled to SQL code native to the choice of data warehouse. Running ```dbt compile``` will do this and it will put the compiled code into <i>credit-risk-score-modelling/target/compiled</i>. But it will not materialize the models yet. To do that, you need to run ```dbt run```. This will compile SQL code including actual materialization, and you can check it (mostly for debugging) in <i>credit-risk-score-modelling/target/compiled</i>. You can run this code directly against your warehouse and it will just work. To run a specific model, compilation or test, use the ```dbt --select``` flag followed by the name (the filename) of your model.
+
+
+<b>Testing</b>
+
+The fact models are being thoroughly tested on a general level and on column level. I am checking that data types are what we expect, that unique columns are indeed unique, that we don't lose records in the process, that we don't have nulls, and values are within specified ranges or sets of values, while also triggering warnings on outliers which don't break our pipeline at runtime. The tests are defined in the <i>sources.yml</i> file and they use native DBT and much of the Great Expectations package. 
+
+In order to perform the entire suite of tests on the models and check everything is okay, simply run ```dbt test``` from the command line. **Fingers crossed!**
+
+<img src="https://t4.ftcdn.net/jpg/02/63/38/65/360_F_263386566_OKVh2HLyRmyBIqUvTwGpQDBOe07dSFPh.jpg" alt="Raw Data ER Diagram" width="250"/>
+
+## Comments on Data Quality
+I have gathered the following observations on the datasets.
+- **loan_status** boolean: in both fact tables is integer; check not null.
+- **loan_amnt** integer: in new_customer it's like <i>12.0k</i> format string; in old_customer it's already an integer like 12000. 
+- **term** integer: new_customer is like <i>3.0Y</i> format string; old_customer is integer already; check not null, consider meaning of zero.
+- **int_rate** double: here already some floating point number in both, check if not null.
+- **installment** double: looks fine in both, check non zero, not null.
+- **sub_grade** integer: you have sub_grade_id integer in new_customer, and sub_grade in old_customer which is the code, we actually need the integer; heck that codes and numbers exist in the table; check not null.
+- **emp_length** integer: employment_length in new, good in old, replace nulls with zero, check not null, should be >= 0.
+- **home_ownership** integer: old customer has in string, new has in integer called home_ownership_id, check values in table.
+- **is_mortgage** boolean: I just want to say that including this in the credit risk model alongside the following features is redundant.
+- **annual_inc** integer: here we need to break down in old_customer in two numbers, take the middle point and replace; check not null. 
+- **verification_status** integer: in old_customer it's a string, in new_customer it's a number; we've seen this before.
+- **is_verified boolean**: if source verified or verified => true else false;
+- **is_not_verified** boolean: same thing but inverse.
+- **is_source_verified** boolean: see above.
+- **issue_d** date:  in new_customer called issued; contains YYYY-mm, YYYY-mm-dd, dd-MON-YY, timestamps, etc,; in old_customer called issue_d; seems to contain only timestamps at 00:00:00; must bring them to common format YYYY-mm-dd; check if string of date corresponds to this regex.
+- **purpose** integer: new_customer has purpose_id; old_customer has name; check if integers are in ids; check if strings are in names in dim tables.
+- **addr_state** integer: same as above.
+- **dti** double: just check if between 0.0 and 100.0. I would suggest using numbers from 0 to 1 for ratios.
+- **fico_range_low** integer: low in both tables is 660 and high is 664, very interesting, they in reality go from 300 to 850; must replace missing values with some defaults.
+- **fico_range_high** integer: same as above.
+- **open_acc** integer: replace nulls with 0, must be positive.
+- **pub_rec** integer: same as open_acc.
+- **revol_bal** integer: same as open_acc.
+- **revol_util** double: replace nulls with zero, should be between 0.0 and 100.0.
+- **mort_acc** integer: same as open_acc.
+- **pub_rec_bankruptcies**: same as open_acc.
+- **age integer** integer: should be between 18 to a bit over 100; doesn't contain nulls but check not null still.
+- **pay_status** integer: must check that it's within accepted set of values.
 
 
 
-
-## Questions For ADC Consultant
+## Curiosities and Observations
 <b>State Variable</b>
 
 My most concerning finding is with respect to the <i>addr_state_id</i> variable in <i>api_newcustomer</i>. I notice that for the <i>api_state table</i> and both the customer tables we have 51 distinct values for names of states and ids respectively. And yes, in <i>api_state</i>, the ids go from 51 to 102, and they correspond correctly with their names to values of <i>addr_state</i> in <i>api_oldcustomer</i>. But the problem is that the <i>addr_state_id</i> values range from 1 to 51. From this I have devised two very different hypotheses.
@@ -200,94 +182,3 @@ I have noticed several redundancies in this supposed ML training dataset:
 - Is pay status supposed to also have values of zero? Because in the PDF of the assignment I have received it says in the variable's description field that "-2 and -1 represent 'pay duly' and then from 1 onwards to 9 the values represent payment delay.' As such, I am assuming that zero also means 'pay duly' or paid just in time, whereas negative values mean that the loan was paid before the term. Is that correct? Currently, I disabled the DBT tests which check for the expression 'pay_status != 0' until I come to the bottom of this.
 - For the home ownership variable I also noticed we have a <i>name</i> of 'NONE' in the dimension table. I thought of assigning Nones to <i>is_other</i> as it made the most sense to me at the moment. But then it's also not clear what the distinction between **ANY** and **OTHER** is, so please explain this further.
 - Lastly, I believe the ID should still be included in this dataset, and should be discarded downstream by the ML pipeline if needed. But it is still very useful for analysis and debugging purposes, and of course, very much so for inference, because we are very interested in who is the customer who might default on their credit.
-
-
-## Tests
-#### Oldcustomer
-- test same number of records as src
-
-#### Newcustomer
-- test same number of records as src
-
-### Data cleaning
-SELECT  
-round( (max(fico_range_low) + min(fico_range_low)) / 2),
-round( (max(fico_range_high) + min(fico_range_high)) / 2)
-FROM `src.api_oldcustomer` 
-
-
-
-
-
-
-
-{# just do the transformations here #}
-WITH src_oldcustomer AS (
-    SELECT
-        *
-    FROM
-        {{ ref('src_oldcustomer') }}
-)
-SELECT
-    id,
-    {# There is no boolean type in SQLite. The closest thing would probably
-    ust be USING an INTEGER column
-    AND storing 0 for FALSE
-    AND 1 for TRUE.https:// stackoverflow.com / questions / 46210704 / CAST - BOOLEAN - TO - INT - IN - sqlite 
-    select cast(loan_status as bool) as loan_status from raw.api_newcustomer; #}
-    loan_status,
-    loan_amnt,
-    term,
-    int_rate, # select cast(int_rate as FLOAT64) from raw.api_oldcustomer;
-    {# here we need to fetch the corresponding id from the src_subgrade table#}
-    installment,
-    sub_grade,
-    CASE
-        WHEN emp_length IS NULL THEN 0
-        ELSE emp_length
-    END AS emp_length,
-    home_ownership,
-    {# here we need to fetch the corresponding id from the src_homeownership table#}
-    if home_ownership == 'MORTGAGE' THEN TRUE
-    ELSE FALSE
-END AS is_mortgage,
-if is_rent == 'RENT' THEN TRUE
-ELSE FALSE
-END AS is_rent,
-0 AS is_own,
-0 AS is_any,
-0 AS is_other,
-{# aici la old customer tre sa spargem in doua numere, sa luam punctul de mijloc media
-si aia e,
-la nou lasam asa,
-CHECK NOT NULL #}
-0 AS annual_inc,
-verification_status {# here we need to fetch the corresponding id from the src_verification table#},
-CASE
-    WHEN verification_status IN (
-        'VERIFIED',
-        'SOURCE_VERIFIED'
-    ) THEN 1
-    ELSE 0
-END AS is_verified,
-is_not_verified, {# very fucking redundant #}
-is_source_verified,
-{# oldcustomer called issue_d seems to contain only timestamps at 00:00:00, bring them to common format 
-YYYY-mm-dd and check if string of date corresponds to this regex or see if yhere are datetime functions idk #}
-issue_d, {# select substr(issue_d, 1, instr(issue_d, ' ')) as issue_d from main.api_oldcustomer limit 5 THERE IS NO DATE TYPE IN SQLITE #}
-{# here we need to fetch the corresponding id from the src_purpose table#}
-purpose,
-{# here we need to fetch the corresponding id from the src_state table#}
-addr_state,
-dti,
-{# {{ seed('statistics.plm') }} 
-definetely use seeds and argument that we don't want this number to change dinamically. 
-make an argument for version control #} 
-case when fico_range_low is null then round(avg(max(fico_range_low), min(fico_range_low))) end as fico_range_low,
-case when fico_range_high is null then round(avg(max(fico_range_high), min(fico_range_high))) end as fico_range_high fico_range_high,
-case when open_acc is null then 0 end as open_acc,
-case when pub_rec is null then 0 end as pub_rec,
-case when revo_bal is null then 0 end as revo_bal,
-case when revol_util is null then 0.0 end as revol_util,
-case when mort_acc is null then 0 end as mort_acc,
-case when pub_rec_bankruptcies is null then 0 end as pub_rec_bankruptcies,

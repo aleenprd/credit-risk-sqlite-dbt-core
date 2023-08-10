@@ -36,7 +36,7 @@ models:
       # Actually ephemeral is just common table expression CTE (reduces clutter from DWH)
       +materialized: ephemeral  
     fct:
-      +materialized: table
+      +materialized: view
 
 # Project variables
 # Required by DBT-Expectations

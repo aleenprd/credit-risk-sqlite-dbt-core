@@ -1,6 +1,5 @@
-# Secrets
-# We don't want this to be visible, obviously
-service_account_key.json  
+# DBT
+logs/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

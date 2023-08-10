@@ -1,4 +1,9 @@
-
 target/
 dbt_packages/
 logs/
+
+# We don't want to post our secrets on the interwebs
+service_account_key.json
+
+# This one is like DBT's cookie tracking basically
+.user.yml 

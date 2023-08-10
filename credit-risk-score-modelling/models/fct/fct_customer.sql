@@ -1,1 +1,6 @@
-{# just union all results here into a single fact table #}
+{{ config(
+    materialized = 'table',
+    sort = 'id',
+    dist = 'id'
+) }}
+
