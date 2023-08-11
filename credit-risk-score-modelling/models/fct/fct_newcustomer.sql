@@ -39,13 +39,13 @@ src_verificationstatus AS (
         *
     FROM
         {{ ref('src_verificationstatus') }}
-),
+) {#,
 seed_fico AS (
     SELECT
         *
     FROM
         {{ ref('seed_fico') }}
-)
+) #}
 SELECT
     cust.id AS id,
     CAST(
@@ -151,28 +151,18 @@ SELECT
     CAST(
         dti AS float64
     ) AS dti,
-    CASE
-        WHEN fico_range_low IS NULL THEN (
-            SELECT
-                avg_fico_low
-            FROM
-                seed_fico
-        )
-        ELSE CAST(
-            fico_range_low AS INTEGER
-        )
-    END AS fico_range_low,
-    CASE
-        WHEN fico_range_high IS NULL THEN (
-            SELECT
-                avg_fico_high
-            FROM
-                seed_fico
-        )
-        ELSE CAST(
-            fico_range_high AS INTEGER
-        )
-    END AS fico_range_high,
+    CAST(
+        CASE
+            WHEN fico_range_low IS NULL THEN fico_range_high
+            ELSE fico_range_low
+        END AS INTEGER
+    ) AS fico_range_low,
+    CAST(
+        CASE
+            WHEN fico_range_high IS NULL THEN fico_range_low
+            ELSE fico_range_high
+        END AS INTEGER
+    ) AS fico_range_high,
     CASE
         WHEN open_acc IS NULL THEN 0
         ELSE CAST(
@@ -214,4 +204,26 @@ SELECT
         payment_status AS INTEGER
     ) AS pay_status
 FROM
-    src_newcustomer cust
+    src_newcustomer cust {# CASE
+    WHEN fico_range_low IS NULL THEN (
+        SELECT
+            avg_fico_low
+        FROM
+            seed_fico
+    )
+    ELSE CAST(
+        fico_range_low AS INTEGER
+    )
+END AS fico_range_low,
+CASE
+    WHEN fico_range_high IS NULL THEN (
+        SELECT
+            avg_fico_high
+        FROM
+            seed_fico
+    )
+    ELSE CAST(
+        fico_range_high AS INTEGER
+    )
+END AS fico_range_high,
+#}

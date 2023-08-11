@@ -10,6 +10,7 @@ Essentially, we are to take the following raw data with its customer loans facts
 <img src="./docs/photos/database_snapshot.png" alt="Raw Data ER Diagram" width="500"/>
 
 The final schema should have strict data types, naming conventions, and should consider missing values, acceptable ranges, etc.
+
 <img src="./docs/photos/final_schema_1.png" alt="Final Data Snapshot P1" width="500"/>
 <img src="./docs/photos/final_schema_2.png" alt="Final Data Snapshot P2" width="500"/>
 
@@ -182,6 +183,8 @@ My take was to get the average between the low and high end of the intervals. In
 I have learned from this assignment that FICO ranges between 300 to 850, so my tests for expected values reflect that. I have also amused myself at discovering that this sample dataset covers scores above the 'poor' threshold. Both the old and new customers onyl go between 660 and 845 which must have been the filter criterion for creating this dataset. Am I on to something? Anyway, it must be a **lucky bank**. :D 
 
 Back to the point, I decided that for some ML models downstream (except for trees), NULL values are not acceptable and that I would like to replace the NULLs with some values. My current logic was to take the average between the min/max low and high FICO ranges and put them in a [**seeds**](https://docs.getdbt.com/docs/build/seeds) (DBT concept) CSV file, from which I created a seeds table. I use these values to fill in the NULLS. I see it as an acceptable practice because we can version control it and change it easily so we can even backpropagate changes within our warehouse.
+
+> <b>Obs:<b> Actually, when fico_range_low is missing, fico_range_high is present and vice-versa so we can safely assume that missing values are a symptom of the FICO ranges being equal. This will become the final workaround.
 
 <b>Machine Learning Feature Selection</b>
 

@@ -57,13 +57,13 @@ src_oldcustomer_annual_inc AS (
             FROM
                 src_oldcustomer
         )
-),
+) {#,
 seed_fico AS (
     SELECT
         *
     FROM
         {{ ref('seed_fico') }}
-)
+) #}
 SELECT
     cust.id AS id,
     CAST(
@@ -145,24 +145,18 @@ SELECT
     CAST(
         dti AS float64
     ) AS dti,
-    CASE
-        WHEN fico_range_low IS NULL THEN (
-            SELECT
-                avg_fico_low
-            FROM
-                seed_fico
-        )
-        ELSE fico_range_low
-    END AS fico_range_low,
-    CASE
-        WHEN fico_range_high IS NULL THEN (
-            SELECT
-                fico_range_high
-            FROM
-                seed_fico
-        )
-        ELSE fico_range_high
-    END AS fico_range_high,
+    CAST(
+        CASE
+            WHEN fico_range_low IS NULL THEN fico_range_high
+            ELSE fico_range_low
+        END AS INTEGER
+    ) AS fico_range_low,
+    CAST(
+        CASE
+            WHEN fico_range_high IS NULL THEN fico_range_low
+            ELSE fico_range_high
+        END AS INTEGER
+    ) AS fico_range_high,
     CASE
         WHEN open_acc IS NULL THEN 0
         ELSE open_acc
@@ -210,4 +204,22 @@ FROM
         5
     )
     LEFT JOIN src_oldcustomer_annual_inc custai
-    ON cust.id = custai.id
+    ON cust.id = custai.id {# CASE
+    WHEN fico_range_low IS NULL THEN (
+        SELECT
+            avg_fico_low
+        FROM
+            seed_fico
+    )
+    ELSE fico_range_low
+END AS fico_range_low,
+CASE
+    WHEN fico_range_high IS NULL THEN (
+        SELECT
+            fico_range_high
+        FROM
+            seed_fico
+    )
+    ELSE fico_range_high
+END AS fico_range_high,
+#}
