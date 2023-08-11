@@ -53,7 +53,7 @@ SELECT
     ) AS loan_status,
     CAST(
         CASE
-            WHEN loan_amnt IS NULL THEN 0.0
+            WHEN loan_amnt IS NULL THEN 0.0 # WHEN CAST(REPLACE(loan_amnt, "k", "") AS float64) * 1000 < 0.0 THEN CAST(REPLACE(loan_amnt, "k", "") AS float64) * 1000 * -1
             ELSE CAST(REPLACE(loan_amnt, "k", "") AS float64) * 1000
         END AS INTEGER
     ) AS loan_amnt,

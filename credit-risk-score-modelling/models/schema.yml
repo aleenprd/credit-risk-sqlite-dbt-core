@@ -6,8 +6,6 @@ models:
     tests:
       - dbt_expectations.expect_table_row_count_to_equal_other_table:
           compare_model: ref("src_oldcustomer")
-      # - dbt_utils.expression_is_true:
-      #     expression: "pay_status != 0"
 
     columns:
       - name: id
@@ -24,8 +22,6 @@ models:
     tests:
       - dbt_expectations.expect_table_row_count_to_equal_other_table:
           compare_model: ref("src_newcustomer")
-      # - dbt_utils.expression_is_true:
-      #     expression: "pay_status != 0"
 
     columns:
       - name: id
@@ -39,9 +35,6 @@ models:
 
   - name: fct_customer
     description: Full and final customer fact table used for Credit Risk Score Modelling.
-    # tests:
-      # - dbt_utils.expression_is_true:
-      #     expression: "pay_status != 0"
 
     columns:
       - name: id
@@ -65,9 +58,9 @@ models:
           - not_null
           - dbt_expectations.expect_column_values_to_be_of_type:
               column_type: int64
-          # - dbt_expectations.expect_column_values_to_be_between:
-          #     min_value: 0
-          #     strictly: true
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              strictly: true
 
       - name: term
         description: The number of payments of the loan.
@@ -210,11 +203,6 @@ models:
           - not_null
           - dbt_expectations.expect_column_values_to_be_of_type:
               column_type: date
-          # - dbt_expectations.expect_column_values_to_match_regex:
-          #     regex: "\b\\d{4}-\\d{2}-\\d{2}\b"
-          #     is_raw: True
-          #     config:
-          #       severity: warn
 
       - name: purpose
         description: A category provided by the borrower for the loan request.

@@ -184,7 +184,8 @@ I have learned from this assignment that FICO ranges between 300 to 850, so my t
 
 Back to the point, I decided that for some ML models downstream (except for trees), NULL values are not acceptable and that I would like to replace the NULLs with some values. My current logic was to take the average between the min/max low and high FICO ranges and put them in a [**seeds**](https://docs.getdbt.com/docs/build/seeds) (DBT concept) CSV file, from which I created a seeds table. I use these values to fill in the NULLS. I see it as an acceptable practice because we can version control it and change it easily so we can even backpropagate changes within our warehouse.
 
-> <b>Obs:<b> Actually, when fico_range_low is missing, fico_range_high is present and vice-versa so we can safely assume that missing values are a symptom of the FICO ranges being equal. This will become the final workaround.
+> <b>Obs:</b> Actually, when fico_range_low is missing, fico_range_high is present and vice-versa so we can safely assume that missing values are a symptom of the FICO ranges being equal. This will become the final workaround.
+> 
 
 <b>Machine Learning Feature Selection</b>
 

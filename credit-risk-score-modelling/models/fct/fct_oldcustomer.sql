@@ -72,6 +72,7 @@ SELECT
     CAST(
         CASE
             WHEN loan_amnt IS NULL THEN 0
+            WHEN loan_amnt < 0 THEN loan_amnt * -1
             ELSE loan_amnt
         END AS INTEGER
     ) AS loan_amnt,
