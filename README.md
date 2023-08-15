@@ -1,5 +1,4 @@
 # Credit Risk Score Modelling
-Designed, implemented, tested, packaged and submitted by [**Alin Preda**](https://www.linkedin.com/in/alin-preda/), Copenhagen, Denmark, August 2023. 
 
 ##  Task Description
 I have included the task's instructions here as a screenshot (couldn't select and copy original text):
